@@ -1,0 +1,115 @@
+erdiagram Order_Management
+
+// Using industry-standard notation for better readability
+notation=crowsfoot
+
+// Strong Entities
+entity Customer {
+    id key
+    name: VARCHAR(100)
+    contact_info: VARCHAR(255)
+    created_at: TIMESTAMP
+    status: VARCHAR(50)
+}
+
+entity Order {
+    id key
+    customer_id: INTEGER
+    order_date: TIMESTAMP
+    status: VARCHAR(50)
+    backorder: BOOLEAN
+}
+
+entity Invoice {
+    id key
+    order_id: INTEGER
+    invoice_date: TIMESTAMP
+    total_amount: DECIMAL(10,2)
+    paid: BOOLEAN
+}
+
+entity Product {
+    id key
+    name: VARCHAR(200)
+    sku: VARCHAR(50)
+    price: DECIMAL(10,2)
+    manufacturer_id: INTEGER
+}
+
+// Associative Entities for M:N relationships
+entity InvoiceItem {
+    id key
+    invoice_id: INTEGER
+    product_id: INTEGER
+    quantity: INTEGER
+    unit_price: DECIMAL(10,2)
+}
+
+entity Shipment {
+    id key
+    order_id: INTEGER
+    shipped_date: TIMESTAMP
+    tracking_number: VARCHAR(100)
+    carrier: VARCHAR(50)
+}
+
+entity ShipmentItem {
+    id key
+    shipment_id: INTEGER
+    product_id: INTEGER
+    quantity: INTEGER
+}
+
+entity Manufacturer {
+    id key
+    name: VARCHAR(100)
+    contact_info: VARCHAR(255)
+}
+
+// Relationships with proper cardinality and participation constraints
+relationship Places {
+    Customer[1] -> Order[0..N | "orders"]
+}
+
+relationship Generates {
+    Order[1] -> Invoice[0..1 | "invoice"]
+}
+
+relationship Contains {
+    Invoice[1] -> InvoiceItem[1..N | "items"]
+}
+
+relationship References {
+    InvoiceItem[N] -> Product[1]
+}
+
+relationship Ships {
+    Order[1] -> Shipment[0..N | "shipments"]
+}
+
+relationship Includes {
+    Shipment[1] -> ShipmentItem[1..N | "items"]
+}
+
+relationship Uses {
+    ShipmentItem[N] -> Product[1]
+}
+
+relationship Produces {
+    Manufacturer[1 | "maker"] -> Product[0..N | "products"]
+}
+
+/*
+Business Rules implemented in the model:
+1. Customer 1:N Order - Each customer can place multiple orders
+2. Order 0..1:1 Invoice - Backorders don't have invoices until fulfilled
+3. Invoice M:N Product (via InvoiceItem) - Each invoice has multiple products
+4. Order 1:N Shipment - Orders can be shipped in multiple shipments
+5. Shipment M:N Product (via ShipmentItem) - Each shipment contains multiple products
+6. Manufacturer 1:N Product - Each product has one manufacturer
+
+Key constraints enforced:
+- All entities have primary keys (id)
+- Foreign keys implemented via _id suffix attributes
+- Associative entities (InvoiceItem, ShipmentItem) handle M:N relationships
+*/

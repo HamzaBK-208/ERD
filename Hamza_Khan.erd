@@ -1,0 +1,64 @@
+```erdiagram
+Entity-Relationship Specification (cleaned)
+
+Entities (high level)
+- Customer(id, name, contact_info, created_at, status)
+- Order(id, customer_id, order_date, status, backorder:boolean)
+- Invoice(id, order_id, invoice_date, total_amount, paid:boolean)
+- Product(id, name, sku, price, manufacturer_id)
+- InvoiceItem(id, invoice_id, product_id, quantity, unit_price)  // associative entity for Invoice↔Product
+- Shipment(id, order_id, shipped_date, tracking_number, carrier)
+- ShipmentItem(id, shipment_id, product_id, quantity)          // associative entity for Shipment↔Product
+- Manufacturer(id, name, contact_info)
+
+Relationships (cardinalities and intent)
+- Customer 1 — M Order
+	Each customer may place many orders; each order is placed by exactly one customer.
+
+- Order 0..1 — 1 Invoice
+	An invoice is always for exactly one order. Some orders (e.g., backorders) may not have an invoice yet, so an order may have zero or one invoice.
+
+- Invoice M — M Product (modeled via InvoiceItem)
+	Each invoice contains one or more invoice items; each invoice item references exactly one product. Use the `InvoiceItem` associative entity to store quantity and unit price.
+
+- Order 1 — M Shipment
+	An order may be shipped in one or more shipments (partial shipments allowed). Each shipment belongs to exactly one order.
+
+- Shipment M — M Product (modeled via ShipmentItem)
+	Each shipment contains shipment items that reference products and quantities.
+
+- Manufacturer 1 — M Product
+	Each product is produced by exactly one manufacturer; a manufacturer may produce many products.
+
+Business Rules (explicit)
+1. A customer may place multiple orders. Each order references one customer.
+2. An order may be backordered (Order.backorder = true). Backordered orders do not have an invoice until they are fulfilled.
+3. Each invoice is generated for exactly one order and contains one or more `InvoiceItem` rows.
+4. An order can be shipped only after the invoice for that order is generated and paid, except for special business exceptions (see Assumptions). If an order is a backorder, no invoice is generated until fulfillment.
+5. A shipment references exactly one order and can contain multiple products (via `ShipmentItem`).
+6. Each product is manufactured by one manufacturer.
+
+Assumptions (clarifying ambiguous points from original)
+- "Invoice per order": invoices are 1:1 with orders conceptually; we model invoice items to handle multiple products per invoice.
+- Backorders: the boolean `backorder` on `Order` indicates the order is pending/partially unfulfilled; backorders do not have invoices until items are available and fulfilled.
+- Shipping ties to orders (not directly to customers). The owner/customer of a shipment is derived from the shipment's order.
+- Paid/shipped rule: shipped orders are expected to be paid (Invoice.paid = true) unless an exception is documented and approved.
+- Customers without orders or invoices may exist (prospects, new customers).
+
+Notes on modeling choices
+- Introduced `InvoiceItem` and `ShipmentItem` associative entities to represent M:N relationships and to capture attributes like quantity and unit price.
+- Chose Order→Invoice as 0..1→1 to reflect backorder behavior described in business rules.
+- Where original text had contradictory cardinalities (for example "Order and Customer: 1–1" while saying customers can have multiple back orders), this document standardizes to Customer 1—M Order.
+
+Changelog
+- Reworded and reorganized the ERD into explicit Entities, Relationships, Business Rules, and Assumptions.
+- Fixed contradictory relationship cardinalities and introduced associative entities for many-to-many relationships.
+- Clarified the semantics of `backorder` and when invoices are generated.
+- Added recommended attributes for entities to make the ERD more actionable.
+
+If you want, I can:
+- produce a diagram image (PNG/SVG) from this specification,
+- add a small SQL DDL (CREATE TABLE statements) reflecting these entities and constraints,
+- or create a one-page README summarizing DB usage and constraints.
+
+```
